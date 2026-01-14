@@ -80,12 +80,15 @@ button:hover { opacity: 0.9; }
 
 .table-wrapper {
     overflow-x: auto;
+    max-width: 100%;
 }
 
 table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 10px;
+    table-layout: auto;
+    min-width: 1200px; /* 确保表格有足够的宽度 */
 }
 
 th, td {
@@ -93,12 +96,16 @@ th, td {
     text-align: left;
     border-bottom: 1px solid var(--border);
     font-size: 14px;
+    word-wrap: break-word; /* 允许换行 */
 }
 
 th {
     background-color: #f8f9fa;
     font-weight: 600;
     color: #555;
+    position: sticky;
+    top: 0;
+    z-index: 10;
 }
 
 tr:hover { background-color: #f1f1f1; }
@@ -118,12 +125,11 @@ tr:hover { background-color: #f1f1f1; }
     background-color: #bbdefb !important;
 }
 
-/* 链接单元格特殊样式 */
+/* 链接单元格特殊样式 - 移除最大宽度限制 */
 .link-cell {
-    max-width: 300px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    min-width: 200px; /* 最小宽度而不是最大宽度 */
+    word-break: break-all; /* 允许在任意字符处断行 */
+    max-width: 400px; /* 设置一个合理的最大宽度 */
 }
 
 .status-badge {
