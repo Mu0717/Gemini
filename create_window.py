@@ -91,7 +91,7 @@ def read_separator_config(file_path: str) -> str:
 
 def parse_account_line(line: str, separator: str) -> dict:
     """
-    根据指定分隔符解析账号信息行
+    根据指定分隔符解析账号信息行（智能识别字段）
     
     Args:
         line: 账号信息行
@@ -100,6 +100,8 @@ def parse_account_line(line: str, separator: str) -> dict:
     Returns:
         解析后的账号字典
     """
+    import re
+    
     # 移除注释
     if '#' in line:
         comment_pos = line.find('#')
@@ -123,16 +125,33 @@ def parse_account_line(line: str, separator: str) -> dict:
         'full_line': line
     }
     
-    # 按固定顺序分配字段
-    # 格式: 邮箱 [分隔符] 密码 [分隔符] 辅助邮箱 [分隔符] 2FA密钥
-    if len(parts) >= 1:
-        result['email'] = parts[0]
-    if len(parts) >= 2:
-        result['password'] = parts[1]
-    if len(parts) >= 3:
-        result['backup_email'] = parts[2]
-    if len(parts) >= 4:
-        result['2fa_secret'] = parts[3]
+    # 分类所有字段
+    emails = []
+    secrets = []
+    others = []
+    
+    for part in parts:
+        if '@' in part and '.' in part:
+            # 邮箱格式：包含@和.
+            emails.append(part)
+        elif re.match(r'^[A-Z0-9]{16,}$', part):
+            # 2FA密钥格式：16位以上，只包含大写字母和数字（常见Base32编码）
+            secrets.append(part)
+        else:
+            # 其他（密码）
+            others.append(part)
+    
+    # 分配字段
+    if len(emails) >= 1:
+        result['email'] = emails[0]
+    if len(emails) >= 2:
+        result['backup_email'] = emails[1]
+    
+    if len(secrets) >= 1:
+        result['2fa_secret'] = secrets[0]
+    
+    if len(others) >= 1:
+        result['password'] = others[0]
     
     return result if result['email'] else None
 
