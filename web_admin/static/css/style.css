@@ -140,6 +140,7 @@ tr:hover { background-color: #f1f1f1; }
     display: inline-block;
 }
 
+.status-pending_check { background: #fff3cd; color: #856404; }
 .status-link_ready { background: #d0e1fd; color: #004085; }
 .status-verified { background: #d4edda; color: #155724; }
 .status-subscribed { background: #cce5ff; color: #004085; }

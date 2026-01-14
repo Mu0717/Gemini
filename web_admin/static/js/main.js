@@ -112,6 +112,7 @@ function showCopyFeedback(element) {
 
 function mapStatus(s) {
     const map = {
+        'pending_check': '待检测资格',
         'link_ready': '有资格待验证已提取链接',
         'verified': '已验证未绑卡',
         'subscribed': '已绑卡订阅',
