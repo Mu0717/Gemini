@@ -6,7 +6,8 @@
 已迁移模块:
 - account_manager: 账号状态管理
 - sheerid_verifier: SheerID链接验证
-- google_auth: Google登录状态检测和自动登录
+- google_auth: Google登录状态检测
+- google_login_service: Google登录服务
 """
 
 from .sheerid_verifier import SheerIDVerifier
@@ -18,6 +19,12 @@ from .google_auth import (
     navigate_and_check_login,
     google_login,
     check_google_one_status,
+)
+from .google_login_service import (
+    GoogleLoginService,
+    login_google_account,
+    check_browser_login_status,
+    quick_login_check,
 )
 
 # 待迁移的模块 - 目前从旧位置导入
@@ -37,18 +44,23 @@ except ImportError as e:
     auto_bind_card = check_and_login = None
 
 __all__ = [
-    # 已迁移模块
+    # 已迁移模块 - 核心类
     'SheerIDVerifier',
     'AccountManager',
+    'GoogleLoginService',
+    # 登录状态
     'GoogleLoginStatus',
     'check_google_login_status',
     'is_logged_in',
     'navigate_and_check_login',
     'google_login',
     'check_google_one_status',
+    # 登录服务便捷函数
+    'login_google_account',
+    'check_browser_login_status',
+    'quick_login_check',
     # 待迁移模块
     'process_browser', 
     'auto_bind_card',
     'check_and_login',
 ]
-
