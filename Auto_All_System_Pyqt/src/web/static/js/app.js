@@ -14,6 +14,7 @@ const state = {
     selectedAccounts: new Set(),
     selectedProxies: new Set(),
     selectedCards: new Set(),
+    showSecrets: true,  // 默认显示密码/密钥
 };
 
 // ==================== API 封装 ====================
@@ -218,7 +219,11 @@ function renderAccountsTable() {
         return;
     }
     
-    tbody.innerHTML = filtered.map(acc => `
+    tbody.innerHTML = filtered.map(acc => {
+        const pwdDisplay = state.showSecrets ? (acc.password || '-') : (acc.password ? '••••••••' : '-');
+        const secretDisplay = state.showSecrets ? (acc.secret_key || '-') : (acc.secret_key ? '••••••' : '-');
+        
+        return `
         <tr>
             <td>
                 <input type="checkbox" class="account-checkbox" data-email="${acc.email}"
@@ -234,12 +239,15 @@ function renderAccountsTable() {
             <td class="password-cell">
                 <span onclick="copyToClipboard('${acc.password || ''}')" 
                       style="cursor: pointer;" title="点击复制">
-                    ${acc.password ? '••••••••' : '-'}
+                    ${pwdDisplay}
                 </span>
             </td>
             <td>${acc.recovery_email || '-'}</td>
             <td class="password-cell">
-                ${acc.secret_key ? '••••••' : '-'}
+                <span onclick="copyToClipboard('${acc.secret_key || ''}')" 
+                      style="cursor: pointer;" title="点击复制">
+                    ${secretDisplay}
+                </span>
             </td>
             <td>
                 <span class="status-tag ${acc.status || 'pending_check'}">
@@ -253,7 +261,8 @@ function renderAccountsTable() {
                 </button>
             </td>
         </tr>
-    `).join('');
+    `;
+    }).join('');
 }
 
 function filterAccounts() {
@@ -530,7 +539,7 @@ function renderCardsTable() {
     if (filtered.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="8" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                <td colspan="9" style="text-align: center; padding: 40px; color: var(--text-muted);">
                     暂无数据
                 </td>
             </tr>
@@ -539,8 +548,10 @@ function renderCardsTable() {
     }
     
     tbody.innerHTML = filtered.map(c => {
-        const maskedNumber = c.card_number ? 
-            c.card_number.slice(0, 4) + ' •••• •••• ' + c.card_number.slice(-4) : '-';
+        const cardDisplay = state.showSecrets ? 
+            c.card_number : 
+            (c.card_number ? c.card_number.slice(0, 4) + ' •••• •••• ' + c.card_number.slice(-4) : '-');
+        const cvvDisplay = state.showSecrets ? (c.cvv || '-') : '•••';
         const isExhausted = c.usage_count >= c.max_usage;
         
         return `
@@ -553,12 +564,18 @@ function renderCardsTable() {
                 <td>
                     <span onclick="copyToClipboard('${c.card_number}')" 
                           style="cursor: pointer; font-family: monospace;" title="点击复制">
-                        ${maskedNumber}
+                        ${cardDisplay}
                     </span>
                 </td>
                 <td>${c.exp_month}/${c.exp_year}</td>
-                <td class="password-cell">•••</td>
+                <td class="password-cell">
+                    <span onclick="copyToClipboard('${c.cvv || ''}')" 
+                          style="cursor: pointer;" title="点击复制">
+                        ${cvvDisplay}
+                    </span>
+                </td>
                 <td>${c.holder_name || '-'}</td>
+                <td>${c.zip_code || '-'}</td>
                 <td>${c.usage_count}/${c.max_usage}</td>
                 <td>
                     <span class="status-tag ${c.is_active ? (isExhausted ? 'inactive' : 'active') : 'inactive'}">
@@ -727,6 +744,29 @@ async function exportFiles() {
         showToast(result.message || '导出成功', 'success');
     } catch (error) {
         showToast(`导出失败: ${error.message}`, 'error');
+    }
+}
+
+function toggleSecrets() {
+    state.showSecrets = !state.showSecrets;
+    
+    // 更新按钮文字和图标
+    const icon = document.getElementById('toggle-secrets-icon');
+    const text = document.getElementById('toggle-secrets-text');
+    
+    if (state.showSecrets) {
+        icon.textContent = '👁️';
+        text.textContent = '隐藏密码';
+    } else {
+        icon.textContent = '🙈';
+        text.textContent = '显示密码';
+    }
+    
+    // 刷新当前页面的表格
+    if (state.currentPage === 'accounts') {
+        renderAccountsTable();
+    } else if (state.currentPage === 'cards') {
+        renderCardsTable();
     }
 }
 

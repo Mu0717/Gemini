@@ -74,6 +74,10 @@
             <h1 class="page-title" id="page-title">仪表盘</h1>
           </div>
           <div class="header-right">
+            <button class="btn btn-ghost" id="toggle-secrets-btn" onclick="toggleSecrets()">
+              <span class="btn-icon" id="toggle-secrets-icon">👁️</span>
+              <span id="toggle-secrets-text">隐藏密码</span>
+            </button>
             <button class="btn btn-ghost" onclick="refreshData()">
               <span class="btn-icon">🔄</span>
               刷新数据
@@ -96,9 +100,6 @@
                 <div class="stat-info">
                   <div class="stat-value" id="stat-accounts">0</div>
                   <div class="stat-label">总账号数</div>
-                </div>
-                <div class="stat-trend up">
-                  <span>+12%</span>
                 </div>
               </div>
               <div class="stat-card gradient-green">
@@ -349,6 +350,7 @@
                     <th>有效期</th>
                     <th>CVV</th>
                     <th>持卡人</th>
+                    <th>邮编</th>
                     <th>使用次数</th>
                     <th>状态</th>
                     <th>操作</th>
@@ -544,7 +546,8 @@ host:port"
             class="textarea"
             id="import-cards-text"
             rows="10"
-            placeholder="每行一张卡，格式：卡号 月 年 CVV 持卡人"
+            placeholder="每行一张卡，格式：卡号 月 年 CVV [持卡人] [邮编]
+持卡人含字母自动识别，邮编为纯数字自动识别"
           ></textarea>
         </div>
         <div class="form-group">

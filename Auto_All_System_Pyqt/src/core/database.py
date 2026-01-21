@@ -106,6 +106,7 @@ class DBManager:
                     exp_year TEXT NOT NULL,
                     cvv TEXT NOT NULL,
                     holder_name TEXT,
+                    zip_code TEXT,
                     billing_address TEXT,
                     remark TEXT,
                     usage_count INTEGER DEFAULT 0,
@@ -115,6 +116,12 @@ class DBManager:
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             ''')
+            
+            # 检查并添加zip_code列（兼容旧数据库）
+            cursor.execute("PRAGMA table_info(cards)")
+            card_columns = [col[1] for col in cursor.fetchall()]
+            if 'zip_code' not in card_columns:
+                cursor.execute('ALTER TABLE cards ADD COLUMN zip_code TEXT')
             
             # ==================== 系统设置表 ====================
             cursor.execute('''
@@ -623,6 +630,7 @@ class DBManager:
                         exp_year=card['exp_year'],
                         cvv=card['cvv'],
                         holder_name=card.get('holder_name'),
+                        zip_code=card.get('zip_code'),
                         max_usage=max_usage
                     )
                     success_count += 1
@@ -644,36 +652,62 @@ class DBManager:
         @brief 解析卡片行
         @param line 卡片配置行
         @return 卡片配置字典
+        @details 支持格式（空格分隔）：
+                 - 卡号 月 年 CVV
+                 - 卡号 月 年 CVV 持卡人
+                 - 卡号 月 年 CVV 邮编（纯数字）
+                 - 卡号 月 年 CVV 持卡人 邮编
+                 智能识别：纯数字=邮编，含字母=持卡人
         """
         line = line.strip()
         
+        result = {
+            'number': None,
+            'exp_month': None,
+            'exp_year': None,
+            'cvv': None,
+            'holder_name': None,
+            'zip_code': None
+        }
+        
         # 尝试空格分隔
         parts = line.split()
-        if len(parts) >= 4:
-            return {
-                'number': parts[0].replace('-', '').replace(' ', ''),
-                'exp_month': parts[1],
-                'exp_year': parts[2],
-                'cvv': parts[3],
-                'holder_name': ' '.join(parts[4:]) if len(parts) > 4 else None
-            }
+        if len(parts) < 4:
+            # 尝试 ---- 分隔
+            parts = line.split('----')
         
-        # 尝试 ---- 分隔
-        parts = line.split('----')
-        if len(parts) >= 4:
-            return {
-                'number': parts[0].replace('-', '').replace(' ', ''),
-                'exp_month': parts[1],
-                'exp_year': parts[2],
-                'cvv': parts[3],
-                'holder_name': parts[4] if len(parts) > 4 else None
-            }
+        if len(parts) < 4:
+            return None
         
-        return None
+        # 前4个字段是固定的：卡号、月、年、CVV
+        result['number'] = parts[0].replace('-', '').replace(' ', '')
+        result['exp_month'] = parts[1]
+        result['exp_year'] = parts[2]
+        result['cvv'] = parts[3]
+        
+        # 处理第5、6个字段（可能是持卡人、邮编或两者都有）
+        if len(parts) >= 5:
+            fifth = parts[4]
+            # 判断第5个字段是持卡人还是邮编
+            if fifth.isdigit():
+                # 纯数字，是邮编
+                result['zip_code'] = fifth
+            else:
+                # 含字母，是持卡人
+                # 如果持卡人名字有多个单词，需要合并
+                if len(parts) >= 6 and parts[-1].isdigit():
+                    # 最后一项是邮编，中间都是持卡人名字
+                    result['holder_name'] = ' '.join(parts[4:-1])
+                    result['zip_code'] = parts[-1]
+                else:
+                    # 没有邮编，剩下的都是持卡人名字
+                    result['holder_name'] = ' '.join(parts[4:])
+        
+        return result
     
     @staticmethod
     def add_card(card_number, exp_month, exp_year, cvv, holder_name=None, 
-                 billing_address=None, remark=None, max_usage=1):
+                 billing_address=None, remark=None, max_usage=1, zip_code=None):
         """
         @brief 添加卡片
         @return 卡片ID
@@ -683,10 +717,10 @@ class DBManager:
             cursor = conn.cursor()
             cursor.execute('''
                 INSERT INTO cards (card_number, exp_month, exp_year, cvv, 
-                                  holder_name, billing_address, remark, max_usage)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                                  holder_name, zip_code, billing_address, remark, max_usage)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (card_number, exp_month, exp_year, cvv, holder_name, 
-                  billing_address, remark, max_usage))
+                  zip_code, billing_address, remark, max_usage))
             card_id = cursor.lastrowid
             conn.commit()
             conn.close()
