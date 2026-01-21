@@ -5,7 +5,6 @@
 """
 import sys
 import os
-import subprocess
 import threading
 
 # 确保src目录在路径中
@@ -26,8 +25,9 @@ except ImportError:
 
 DBManager.init_db()
 
-# 全局Web服务器进程
-_web_server_process = None
+# 全局Web服务器线程和httpd实例
+_web_server_thread = None
+_web_server_httpd = None
 
 
 def start_web_server(port=8080):
@@ -36,42 +36,59 @@ def start_web_server(port=8080):
     @param port 服务器端口
     @return 是否成功启动
     """
-    global _web_server_process
+    global _web_server_thread, _web_server_httpd
     
-    if _web_server_process and _web_server_process.poll() is None:
+    if _web_server_thread and _web_server_thread.is_alive():
         print("[Web服务器] 已在运行中")
         return True
     
+    def _run_server():
+        global _web_server_httpd
+        try:
+            # 导入server模块
+            import socketserver
+            
+            # 添加web目录到路径
+            web_dir = os.path.join(SRC_DIR, 'web')
+            if web_dir not in sys.path:
+                sys.path.insert(0, web_dir)
+            
+            from web.server import APIHandler, TEMPLATE_DIR, STATIC_DIR
+            
+            # 确保目录存在
+            os.makedirs(TEMPLATE_DIR, exist_ok=True)
+            os.makedirs(os.path.join(STATIC_DIR, 'css'), exist_ok=True)
+            os.makedirs(os.path.join(STATIC_DIR, 'js'), exist_ok=True)
+            
+            socketserver.TCPServer.allow_reuse_address = True
+            _web_server_httpd = socketserver.TCPServer(("", port), APIHandler)
+            
+            print(f"╔══════════════════════════════════════════╗")
+            print(f"║   🚀 Web Admin Server Started            ║")
+            print(f"║   📍 http://localhost:{port:<5}              ║")
+            print(f"╚══════════════════════════════════════════╝")
+            
+            _web_server_httpd.serve_forever()
+            
+        except Exception as e:
+            print(f"[Web服务器] 启动失败: {e}")
+            import traceback
+            traceback.print_exc()
+    
     try:
-        # 查找server.py路径
-        server_paths = [
-            os.path.join(SRC_DIR, 'web', 'server.py'),
-            os.path.join(SRC_DIR, 'web_admin', 'server.py'),
-            os.path.join(os.path.dirname(SRC_DIR), 'web', 'server.py'),
-        ]
+        _web_server_thread = threading.Thread(target=_run_server, daemon=True)
+        _web_server_thread.start()
         
-        server_path = None
-        for path in server_paths:
-            if os.path.exists(path):
-                server_path = path
-                break
+        # 等待一小段时间确保启动
+        import time
+        time.sleep(0.5)
         
-        if not server_path:
-            print("[Web服务器] 未找到server.py文件")
+        if _web_server_thread.is_alive():
+            print(f"[Web服务器] 已启动，端口: {port}")
+            return True
+        else:
+            print("[Web服务器] 启动失败")
             return False
-        
-        # 启动子进程
-        python_exe = sys.executable
-        _web_server_process = subprocess.Popen(
-            [python_exe, server_path, '--port', str(port)],
-            cwd=os.path.dirname(server_path),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0
-        )
-        
-        print(f"[Web服务器] 已启动，端口: {port}, PID: {_web_server_process.pid}")
-        return True
         
     except Exception as e:
         print(f"[Web服务器] 启动失败: {e}")
@@ -82,16 +99,16 @@ def stop_web_server():
     """
     @brief 停止Web服务器
     """
-    global _web_server_process
+    global _web_server_thread, _web_server_httpd
     
-    if _web_server_process:
+    if _web_server_httpd:
         try:
-            _web_server_process.terminate()
-            _web_server_process.wait(timeout=5)
+            _web_server_httpd.shutdown()
             print("[Web服务器] 已停止")
-        except:
-            _web_server_process.kill()
-        _web_server_process = None
+        except Exception as e:
+            print(f"[Web服务器] 停止失败: {e}")
+        _web_server_httpd = None
+    _web_server_thread = None
 
 
 def is_web_server_running():
@@ -99,8 +116,8 @@ def is_web_server_running():
     @brief 检查Web服务器是否在运行
     @return 是否运行中
     """
-    global _web_server_process
-    return _web_server_process and _web_server_process.poll() is None
+    global _web_server_thread
+    return _web_server_thread and _web_server_thread.is_alive()
 
 
 def run_gui():
