@@ -721,13 +721,13 @@ DEFAULT_BROWSER_TEMPLATE = {
     },
     "proxyMethod": 2,
     "proxyType": "noproxy",
-    "syncTabs": True,
-    "syncCookies": True,
+    "syncTabs": False,           # 不保存标签页，下次打开时空白
+    "syncCookies": True,         # 保存cookies，保持登录状态
     "syncIndexedDb": True,
     "syncLocalStorage": True,
-    "syncBookmarks": True,
-    "syncAuthorization": True, 
-    "syncHistory": True,
+    "syncBookmarks": False,      # 不保存书签
+    "syncAuthorization": True,   # 保存授权信息
+    "syncHistory": False,        # 不保存历史记录
     "syncExtensions": True
 }
 
