@@ -355,9 +355,13 @@ auto_bitbrowser/
 
 ### 💰 USDT 赞助
 
-| 网络 | 地址 |
-|------|------|
-| **TRON (TRC20)** | `TJUDyB9YKw55X7krmNMZXDYzod7rFa6sG1` |
+<div align="center">
+
+![USDT-TRC20](Auto_All_System_Pyqt/resources/OKX.jpg)
+
+**TRON (TRC20)**: `TJUDyB9YKw55X7krmNMZXDYzod7rFa6sG1`
+
+</div>
 
 ---
 
