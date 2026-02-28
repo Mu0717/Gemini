@@ -332,7 +332,7 @@ class APIHandler(http.server.SimpleHTTPRequestHandler):
             
             # 验证状态值
             valid_statuses = ['pending_check', 'link_ready', 'verified', 'subscribed', 
-                            'subscribed_antigravity', 'ineligible', 'error']
+                            'subscribed_antigravity', 'sold', 'ineligible', 'error']
             if status not in valid_statuses:
                 self.send_json({'success': False, 'error': f'无效的状态: {status}'}, 400)
                 return
@@ -632,7 +632,8 @@ class APIHandler(http.server.SimpleHTTPRequestHandler):
                     detail = {
                         'verification_id': vid,
                         'status': status,
-                        'message': message
+                        'message': message,
+                        'raw_data': result
                     }
                     
                     if status == 'success':
@@ -663,6 +664,33 @@ class APIHandler(http.server.SimpleHTTPRequestHandler):
             except Exception as e:
                 import traceback
                 traceback.print_exc()
+                self.send_json({'success': False, 'error': str(e)})
+            return
+        
+        # ==================== SheerID 充值 ====================
+        if path == '/api/sheerid/redeem':
+            try:
+                code = params.get('code', '').strip()
+                if not code:
+                    self.send_json({'success': False, 'error': '请输入充值码'})
+                    return
+                
+                # Get API Key
+                api_key = params.get('api_key', '').strip() or DBManager.get_setting('sheerid_api_key', '')
+                if not api_key:
+                    self.send_json({'success': False, 'error': 'API Key not configured'})
+                    return
+
+                from google.backend.sheerid_verifier import SheerIDVerifier
+                verifier = SheerIDVerifier(api_key)
+                
+                result = verifier.redeem_code(code)
+                
+                if result.get('credits_added'):
+                    self.send_json({'success': True, 'data': result, 'message': f"充值成功! 增加 {result['credits_added']} 积分"})
+                else:
+                     self.send_json({'success': False, 'error': result.get('message', '充值失败'), 'data': result})
+            except Exception as e:
                 self.send_json({'success': False, 'error': str(e)})
             return
         
@@ -821,6 +849,17 @@ class APIHandler(http.server.SimpleHTTPRequestHandler):
         # ==================== 获取账号列表（用于一键处理）====================
         if path == '/api/accounts/for_process':
             try:
+                # 获取分页和筛选参数
+                page = int(params.get('page', 1))
+                page_size = int(params.get('page_size', 50))  # 默认每页50条
+                status_filter = params.get('status', '')  # 状态筛选
+                search_keyword = params.get('search', '').strip().lower()  # 搜索关键字
+                has_twofa = params.get('has_twofa', None)  # 是否有2FA密钥
+                
+                # 限制分页参数范围
+                page = max(1, page)
+                page_size = max(1, min(page_size, 200))  # 最大200条/页
+                
                 accounts = DBManager.get_all_accounts()
                 
                 # 提取关键信息（不含敏感信息，但包含2FA密钥用于前端过滤）
@@ -830,19 +869,50 @@ class APIHandler(http.server.SimpleHTTPRequestHandler):
                     browser_id = acc.get('browser_id', '')
                     if not browser_id:  # 跳过未绑定窗口的账号
                         continue
+                    
+                    # 状态筛选
+                    if status_filter and acc.get('status', '') != status_filter:
+                        continue
+                    
+                    # 搜索关键字筛选（邮箱）
+                    if search_keyword and search_keyword not in acc.get('email', '').lower():
+                        continue
+                    
+                    # 2FA 密钥筛选
+                    secret_key = acc.get('secret_key', '')
+                    if has_twofa is not None:
+                        if has_twofa and not secret_key:
+                            continue
+                        if not has_twofa and secret_key:
+                            continue
+                    
                     account_list.append({
                         'id': acc.get('id', ''),
                         'email': acc.get('email', ''),
                         'status': acc.get('status', 'pending'),
                         'browser_id': browser_id,
                         'updated_at': acc.get('updated_at', ''),
-                        'twofa_key': acc.get('secret_key', ''),  # 用于前端筛选有2FA密钥的账号
+                        'twofa_key': secret_key,  # 用于前端筛选有2FA密钥的账号
                     })
+                
+                # 计算分页
+                total = len(account_list)
+                total_pages = (total + page_size - 1) // page_size if total > 0 else 1
+                start_idx = (page - 1) * page_size
+                end_idx = start_idx + page_size
+                
+                # 分页后的数据
+                paged_accounts = account_list[start_idx:end_idx]
                 
                 self.send_json({
                     'success': True,
-                    'accounts': account_list,
-                    'total': len(account_list)
+                    'accounts': paged_accounts,
+                    'total': total,
+                    'page': page,
+                    'page_size': page_size,
+                    'total_pages': total_pages,
+                    'has_next': page < total_pages,
+                    'has_prev': page > 1
                 })
                     
             except Exception as e:

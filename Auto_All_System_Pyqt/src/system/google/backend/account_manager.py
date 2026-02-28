@@ -120,6 +120,17 @@ class AccountManager:
             DBManager.upsert_account(email, pwd, rec, sec, link, status='subscribed')
             
     @staticmethod
+    def move_to_face_check(line):
+        """
+        @brief 移动到 face_check 状态（需要人脸验证）
+        @param line 账号信息行
+        """
+        print(f"[AM] move_to_face_check 调用")
+        email, pwd, rec, sec, link = AccountManager._parse(line)
+        if email:
+            DBManager.upsert_account(email, pwd, rec, sec, link, status='face_check', is_face_needed=1)
+            
+    @staticmethod
     def remove_from_file_unsafe(file_key, line_or_email):
         """
         @brief 从文件中移除（兼容旧接口，现在是空操作）

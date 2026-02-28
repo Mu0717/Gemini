@@ -43,7 +43,7 @@ class DBManager:
         @brief 获取数据库连接
         @return sqlite3连接对象
         """
-        conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+        conn = sqlite3.connect(DB_PATH, timeout=30, check_same_thread=False)
         conn.row_factory = sqlite3.Row
         return conn
 
@@ -81,6 +81,8 @@ class DBManager:
                 cursor.execute('ALTER TABLE accounts ADD COLUMN created_at TIMESTAMP')
             if 'is_exported' not in columns:
                 cursor.execute('ALTER TABLE accounts ADD COLUMN is_exported INTEGER DEFAULT 0')
+            if 'is_face_needed' not in columns:
+                cursor.execute('ALTER TABLE accounts ADD COLUMN is_face_needed INTEGER DEFAULT 0')
             
             # ==================== 代理表 ====================
             cursor.execute('''
@@ -284,7 +286,7 @@ class DBManager:
     
     @staticmethod
     def upsert_account(email, password=None, recovery_email=None, secret_key=None, 
-                       link=None, browser_id=None, status=None, message=None):
+                       link=None, browser_id=None, status=None, message=None, is_face_needed=None):
         """
         @brief 插入或更新账号信息
         @param email 邮箱（主键）
@@ -316,7 +318,9 @@ class DBManager:
                     if link is not None: fields.append("verification_link = ?"); values.append(link)
                     if browser_id is not None: fields.append("browser_id = ?"); values.append(browser_id)
                     if status is not None: fields.append("status = ?"); values.append(status)
+
                     if message is not None: fields.append("message = ?"); values.append(message)
+                    if is_face_needed is not None: fields.append("is_face_needed = ?"); values.append(is_face_needed)
                     
                     if fields:
                         fields.append("updated_at = CURRENT_TIMESTAMP")
@@ -326,10 +330,10 @@ class DBManager:
                 else:
                     cursor.execute('''
                         INSERT INTO accounts (email, password, recovery_email, secret_key, 
-                                            verification_link, browser_id, status, message)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                                            verification_link, browser_id, status, message, is_face_needed)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ''', (email, password, recovery_email, secret_key, link, browser_id, 
-                          status or 'pending_check', message))
+                          status or 'pending_check', message, is_face_needed or 0))
                 
                 conn.commit()
                 conn.close()
@@ -819,33 +823,37 @@ class DBManager:
         error_count = 0
         errors = []
         
-        for line_num, line in enumerate(lines, 1):
-            line = line.strip()
-            if not line or line.startswith('#') or line.startswith('分隔符='):
-                continue
+        with lock:
+            conn = DBManager.get_connection()
+            cursor = conn.cursor()
             
-            card = DBManager._parse_card_line(line)
-            if card:
-                try:
-                    DBManager.add_card(
-                        card_number=card['number'],
-                        exp_month=card['exp_month'],
-                        exp_year=card['exp_year'],
-                        cvv=card['cvv'],
-                        holder_name=card.get('holder_name'),
-                        zip_code=card.get('zip_code'),
-                        max_usage=max_usage
-                    )
-                    success_count += 1
-                except sqlite3.IntegrityError:
+            for line_num, line in enumerate(lines, 1):
+                line = line.strip()
+                if not line or line.startswith('#') or line.startswith('分隔符='):
+                    continue
+                
+                card = DBManager._parse_card_line(line)
+                if card:
+                    try:
+                        cursor.execute('''
+                            INSERT INTO cards (card_number, exp_month, exp_year, cvv, 
+                                              holder_name, zip_code, max_usage)
+                            VALUES (?, ?, ?, ?, ?, ?, ?)
+                        ''', (card['number'], card['exp_month'], card['exp_year'], card['cvv'],
+                              card.get('holder_name'), card.get('zip_code'), max_usage))
+                        success_count += 1
+                    except sqlite3.IntegrityError:
+                        error_count += 1
+                        errors.append(f"Line {line_num}: 卡号已存在")
+                    except Exception as e:
+                        error_count += 1
+                        errors.append(f"Line {line_num}: {str(e)}")
+                else:
                     error_count += 1
-                    errors.append(f"Line {line_num}: 卡号已存在")
-                except Exception as e:
-                    error_count += 1
-                    errors.append(f"Line {line_num}: {str(e)}")
-            else:
-                error_count += 1
-                errors.append(f"Line {line_num}: 无法解析 - {line[:30]}")
+                    errors.append(f"Line {line_num}: 无法解析 - {line[:30]}")
+            
+            conn.commit()
+            conn.close()
         
         return success_count, error_count, errors
     

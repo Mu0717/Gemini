@@ -554,7 +554,7 @@ class WorkerThread(QThread):
                 self.progress_signal.emit(finished_tasks, len(ids_to_process))
                 
                 try:
-                    success, final_status, msg = future.result()
+                    success, final_status, msg, state = future.result()
                     if success:
                         self.log(f"✅ ({finished_tasks}/{len(ids_to_process)}) {bid[:12]}...: {msg}")
                         if final_status == 'subscribed':

@@ -332,7 +332,7 @@ class APIHandler(http.server.SimpleHTTPRequestHandler):
             
             # 验证状态值
             valid_statuses = ['pending_check', 'link_ready', 'verified', 'subscribed', 
-                            'subscribed_antigravity', 'ineligible', 'error']
+                            'subscribed_antigravity', 'sold', 'ineligible', 'error']
             if status not in valid_statuses:
                 self.send_json({'success': False, 'error': f'无效的状态: {status}'}, 400)
                 return
@@ -524,83 +524,95 @@ class APIHandler(http.server.SimpleHTTPRequestHandler):
         if path == '/api/sheerid/quota':
             try:
                 import json as json_module
+                from datetime import datetime
+                from google.backend.sheerid_verifier import SheerIDVerifier
                 
-                # 优先从请求参数获取 API Key，否则从数据库获取
                 api_key = params.get('api_key', '').strip()
                 if not api_key:
                     api_key = DBManager.get_setting('sheerid_api_key', '')
                 
                 if not api_key:
                     self.send_json({
-                        'success': False,
+                        'success': False, 
                         'error': '请先配置 API Key',
-                        'current_quota': 0,
-                        'available_slots': 0,
-                        'active_jobs': 0
+                        'current_quota': 0
                     })
                     return
                 
-                # 调用 SheerID 验证器获取系统状态
-                from google.backend.sheerid_verifier import SheerIDVerifier
                 verifier = SheerIDVerifier(api_key)
                 status = verifier.get_system_status()
                 
-                # 检查是否有错误
                 if status.get('status') == 'error':
-                    self.send_json({
-                        'success': False,
-                        'error': status.get('message', f"API错误: {status.get('code', 'unknown')}"),
-                        'current_quota': 0,
-                        'available_slots': 0,
-                        'active_jobs': 0
-                    })
+                    self.send_json({'success': False, 'error': status.get('message', 'Unknown error')})
                     return
+
+                credits = status.get('credits', 0)
                 
-                # 读取保存的配额信息（来自上次验证）
-                saved_quota = 0
-                quota_time = ''
-                try:
-                    quota_json = DBManager.get_setting('sheerid_quota', '{}')
-                    quota_data = json_module.loads(quota_json)
-                    saved_quota = quota_data.get('current_quota', 0)
-                    quota_timestamp = DBManager.get_setting('sheerid_quota_time', '')
-                    if quota_timestamp:
-                        from datetime import datetime
-                        dt = datetime.fromtimestamp(int(quota_timestamp))
-                        quota_time = dt.strftime('%Y-%m-%d %H:%M:%S')
-                except:
-                    pass
+                # 保存最新的配额信息
+                current_time = int(time.time())
+                quota_info = {"current_quota": credits, "updated_at": current_time}
+                DBManager.set_setting('sheerid_quota', json_module.dumps(quota_info))
+                DBManager.set_setting('sheerid_quota_time', str(current_time))
                 
-                # 返回系统状态 + 保存的配额信息
+                quota_time_str = datetime.fromtimestamp(current_time).strftime('%Y-%m-%d %H:%M:%S')
+                
                 result = {
                     'success': True,
-                    'current_quota': saved_quota,
-                    'quota_update_time': quota_time,
-                    'available_slots': status.get('availableSlots', 0),
+                    'current_quota': credits,
+                    'quota_update_time': quota_time_str,
+                    'available_slots': status.get('availableSlots', 999), 
                     'active_jobs': status.get('activeJobs', 0),
-                    'max_concurrent': status.get('maxConcurrent', 0),
-                    'status': status.get('status', 'ok')
+                    'max_concurrent': status.get('maxConcurrent', 10),
+                    'status': 'ok'
                 }
                 self.send_json(result)
             except Exception as e:
-                self.send_json({
-                    'success': False,
-                    'error': str(e),
-                    'current_quota': 0,
-                    'available_slots': 0,
-                    'active_jobs': 0
-                })
+                self.send_json({'success': False, 'error': str(e)})
             return
         
-        # ==================== SheerID 验证 ====================
+        if path == '/api/sheerid/redeem':
+            try:
+                from google.backend.sheerid_verifier import SheerIDVerifier
+                
+                code = params.get('code', '').strip()
+                api_key = params.get('api_key', '').strip()
+                if not api_key:
+                    api_key = DBManager.get_setting('sheerid_api_key', '')
+                
+                if not code:
+                    self.send_json({'success': False, 'error': '请输入卡密'}, 400)
+                    return
+                
+                if not api_key:
+                    self.send_json({'success': False, 'error': '请先配置 API Key'}, 400)
+                    return
+                
+                verifier = SheerIDVerifier(api_key)
+                result = verifier.redeem(code)
+                
+                if result.get('success') is False:
+                    self.send_json(result)
+                else:
+                    self.send_json({
+                        'success': True,
+                        'message': result.get('message', '兑换成功'),
+                        'credits_added': result.get('credits_added', 0),
+                        'credits_total': result.get('credits_total', 0)
+                    })
+                    
+            except Exception as e:
+                self.send_json({'success': False, 'error': str(e)})
+            return
+
         if path == '/api/sheerid/verify':
             try:
+                from google.backend.sheerid_verifier import SheerIDVerifier
+                
                 verification_ids = params.get('verification_ids', [])
                 if not verification_ids:
                     self.send_json({'success': False, 'error': '请选择要验证的账号'})
                     return
                 
-                # 优先从请求参数获取 API Key，否则从数据库获取
                 api_key = params.get('api_key', '').strip()
                 if not api_key:
                     api_key = DBManager.get_setting('sheerid_api_key', '')
@@ -608,57 +620,43 @@ class APIHandler(http.server.SimpleHTTPRequestHandler):
                     self.send_json({'success': False, 'error': '请先配置 API Key'})
                     return
                 
-                # 导入验证器
-                from google.backend.sheerid_verifier import SheerIDVerifier
-                import re
-                
                 verifier = SheerIDVerifier(api_key)
-                
-                # 记录验证日志
                 DBManager.add_log('info', f'开始验证 {len(verification_ids)} 个账号')
                 
-                # 执行验证
                 results = verifier.verify_batch(verification_ids)
                 
-                # 处理结果，更新数据库状态
+                frontend_results = []
                 success_count = 0
                 failed_count = 0
-                result_details = []
                 
-                for vid, result in results.items():
-                    status = result.get('currentStep', 'unknown')
-                    message = result.get('message', '')
-                    
-                    detail = {
-                        'verification_id': vid,
-                        'status': status,
-                        'message': message
-                    }
+                for vid, res in results.items():
+                    status = res.get('currentStep', 'unknown')
+                    msg = res.get('message', '')
                     
                     if status == 'success':
                         success_count += 1
-                        # 更新数据库状态为 verified
                         DBManager.update_account_status_by_sheerid(vid, 'verified')
-                        DBManager.add_log('info', f'验证成功: {vid[:20]}...')
+                        DBManager.add_log('info', f'验证成功: {str(vid)[:20]}...')
                     else:
                         failed_count += 1
-                        DBManager.add_log('warning', f'验证失败: {vid[:20]}... - {message}')
+                        DBManager.add_log('warning', f'验证失败: {str(vid)[:20]}... - {msg}')
                     
-                    result_details.append(detail)
-                
-                # 获取更新后的配额信息
-                quota_info = verifier.quota_info
+                    frontend_results.append({
+                        'verification_id': vid,
+                        'status': status,
+                        'message': msg
+                    })
                 
                 self.send_json({
                     'success': True,
                     'total': len(verification_ids),
                     'success_count': success_count,
                     'failed_count': failed_count,
-                    'results': result_details,
-                    'quota': quota_info
+                    'results': frontend_results,
+                    'quota': {} 
                 })
                 
-                DBManager.add_log('info', f'验证完成: 成功 {success_count}, 失败 {failed_count}')
+                DBManager.add_log('info', f"验证完成: 成功 {success_count}, 失败 {failed_count}")
                 
             except Exception as e:
                 import traceback
@@ -821,6 +819,17 @@ class APIHandler(http.server.SimpleHTTPRequestHandler):
         # ==================== 获取账号列表（用于一键处理）====================
         if path == '/api/accounts/for_process':
             try:
+                # 获取分页和筛选参数
+                page = int(params.get('page', 1))
+                page_size = int(params.get('page_size', 50))  # 默认每页50条
+                status_filter = params.get('status', '')  # 状态筛选
+                search_keyword = params.get('search', '').strip().lower()  # 搜索关键字
+                has_twofa = params.get('has_twofa', None)  # 是否有2FA密钥
+                
+                # 限制分页参数范围
+                page = max(1, page)
+                page_size = max(1, min(page_size, 200))  # 最大200条/页
+                
                 accounts = DBManager.get_all_accounts()
                 
                 # 提取关键信息（不含敏感信息，但包含2FA密钥用于前端过滤）
@@ -830,19 +839,50 @@ class APIHandler(http.server.SimpleHTTPRequestHandler):
                     browser_id = acc.get('browser_id', '')
                     if not browser_id:  # 跳过未绑定窗口的账号
                         continue
+                    
+                    # 状态筛选
+                    if status_filter and acc.get('status', '') != status_filter:
+                        continue
+                    
+                    # 搜索关键字筛选（邮箱）
+                    if search_keyword and search_keyword not in acc.get('email', '').lower():
+                        continue
+                    
+                    # 2FA 密钥筛选
+                    secret_key = acc.get('secret_key', '')
+                    if has_twofa is not None:
+                        if has_twofa and not secret_key:
+                            continue
+                        if not has_twofa and secret_key:
+                            continue
+                    
                     account_list.append({
                         'id': acc.get('id', ''),
                         'email': acc.get('email', ''),
                         'status': acc.get('status', 'pending'),
                         'browser_id': browser_id,
                         'updated_at': acc.get('updated_at', ''),
-                        'twofa_key': acc.get('secret_key', ''),  # 用于前端筛选有2FA密钥的账号
+                        'twofa_key': secret_key,  # 用于前端筛选有2FA密钥的账号
                     })
+                
+                # 计算分页
+                total = len(account_list)
+                total_pages = (total + page_size - 1) // page_size if total > 0 else 1
+                start_idx = (page - 1) * page_size
+                end_idx = start_idx + page_size
+                
+                # 分页后的数据
+                paged_accounts = account_list[start_idx:end_idx]
                 
                 self.send_json({
                     'success': True,
-                    'accounts': account_list,
-                    'total': len(account_list)
+                    'accounts': paged_accounts,
+                    'total': total,
+                    'page': page,
+                    'page_size': page_size,
+                    'total_pages': total_pages,
+                    'has_next': page < total_pages,
+                    'has_prev': page > 1
                 })
                     
             except Exception as e:

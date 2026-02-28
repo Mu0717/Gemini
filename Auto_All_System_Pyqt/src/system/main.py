@@ -17,6 +17,17 @@ LEGACY_DIR = os.path.join(SRC_DIR, '_legacy')
 if LEGACY_DIR not in sys.path:
     sys.path.insert(0, LEGACY_DIR)
 
+# 修复 google 命名空间包冲突：pip 安装的 google-generativeai 等库会注册
+# google 命名空间包，导致 Python 找不到本地的 google.backend 子模块。
+# 通过将本地 google 包路径注入到 google.__path__ 最前面来解决。
+try:
+    import google
+    local_google_path = os.path.join(SRC_DIR, 'google')
+    if os.path.isdir(local_google_path):
+        google.__path__ = [local_google_path] + list(google.__path__)
+except Exception:
+    pass
+
 # 初始化核心模块
 try:
     from core.database import DBManager

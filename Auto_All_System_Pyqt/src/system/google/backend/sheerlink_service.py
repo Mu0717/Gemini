@@ -18,6 +18,7 @@ from .google_auth import (
     STATUS_VERIFIED,
     STATUS_LINK_READY,
     STATUS_INELIGIBLE,
+    STATUS_FACE_CHECK,
 )
 from .account_manager import AccountManager
 
@@ -220,9 +221,13 @@ class SheerLinkService:
                         return True, "有资格待验证 (Eligible)"
                 
                 # 无资格
-                elif status == STATUS_INELIGIBLE:
                     AccountManager.move_to_ineligible(acc_line)
                     return False, "无资格 (Not Available)"
+                
+                # 人脸验证
+                elif status == STATUS_FACE_CHECK:
+                    AccountManager.move_to_face_check(acc_line)
+                    return False, "需要人脸验证 (Face Verification Needed)"
                 
                 # 错误或未知状态
                 else:

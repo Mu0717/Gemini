@@ -30,6 +30,7 @@ STATUS_LINK_READY = 'link_ready'
 STATUS_INELIGIBLE = 'ineligible'
 STATUS_ERROR = 'error'
 STATUS_PENDING = 'pending_check'
+STATUS_FACE_CHECK = 'face_check'
 
 STATUS_DISPLAY = {
     STATUS_PENDING: '❔待检测',
@@ -39,6 +40,7 @@ STATUS_DISPLAY = {
     STATUS_VERIFIED: '✅已验证',
     STATUS_SUBSCRIBED: '👑已订阅',
     STATUS_SUBSCRIBED_ANTIGRAVITY: '🌟已解锁',
+    STATUS_FACE_CHECK: '📸人脸验证',
     STATUS_ERROR: '⚠️错误',
 }
 
@@ -658,6 +660,9 @@ async def detect_eligibility_status(page: Page, timeout: float = 15.0) -> Tuple[
             .or_(page.locator('text="不可用"'))
             .or_(page.locator('text=/under a certain age/i'))  # 年龄限制文案
         )
+
+        # 4. 人脸验证 - "This account isn't eligible for the Google AI Pro plan"
+        face_check_locator = page.locator('text="This account isn\'t eligible for the Google AI Pro plan"')
         
         # ==================== 🔑 并行竞争：翻译检测 + 元素检测 ====================
         
@@ -694,7 +699,7 @@ async def detect_eligibility_status(page: Page, timeout: float = 15.0) -> Tuple[
         
         async def element_check():
             """元素定位器检测"""
-            combined = sheerid_locator.or_(verified_locator).or_(ineligible_locator)
+            combined = sheerid_locator.or_(verified_locator).or_(ineligible_locator).or_(face_check_locator).or_(face_check_locator)
             try:
                 await expect(combined).to_be_visible(timeout=timeout * 1000)
                 return "element_ready"
@@ -740,6 +745,15 @@ async def detect_eligibility_status(page: Page, timeout: float = 15.0) -> Tuple[
             except:
                 pass
         
+        # 优先级1.5: 检查人脸验证
+        if await face_check_locator.count() > 0:
+            try:
+                if await face_check_locator.first.is_visible():
+                    print(f"[GoogleAuth] 📸 检测到人脸验证需求")
+                    return STATUS_FACE_CHECK, None
+            except:
+                pass
+
         # 优先级2: 检查已验证未绑卡
         if await verified_locator.count() > 0:
             try:

@@ -43,7 +43,7 @@ class DBManager:
         @brief 获取数据库连接
         @return sqlite3连接对象
         """
-        conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+        conn = sqlite3.connect(DB_PATH, timeout=30, check_same_thread=False)
         conn.row_factory = sqlite3.Row
         return conn
 
@@ -819,33 +819,37 @@ class DBManager:
         error_count = 0
         errors = []
         
-        for line_num, line in enumerate(lines, 1):
-            line = line.strip()
-            if not line or line.startswith('#') or line.startswith('分隔符='):
-                continue
+        with lock:
+            conn = DBManager.get_connection()
+            cursor = conn.cursor()
             
-            card = DBManager._parse_card_line(line)
-            if card:
-                try:
-                    DBManager.add_card(
-                        card_number=card['number'],
-                        exp_month=card['exp_month'],
-                        exp_year=card['exp_year'],
-                        cvv=card['cvv'],
-                        holder_name=card.get('holder_name'),
-                        zip_code=card.get('zip_code'),
-                        max_usage=max_usage
-                    )
-                    success_count += 1
-                except sqlite3.IntegrityError:
+            for line_num, line in enumerate(lines, 1):
+                line = line.strip()
+                if not line or line.startswith('#') or line.startswith('分隔符='):
+                    continue
+                
+                card = DBManager._parse_card_line(line)
+                if card:
+                    try:
+                        cursor.execute('''
+                            INSERT INTO cards (card_number, exp_month, exp_year, cvv, 
+                                              holder_name, zip_code, max_usage)
+                            VALUES (?, ?, ?, ?, ?, ?, ?)
+                        ''', (card['number'], card['exp_month'], card['exp_year'], card['cvv'],
+                              card.get('holder_name'), card.get('zip_code'), max_usage))
+                        success_count += 1
+                    except sqlite3.IntegrityError:
+                        error_count += 1
+                        errors.append(f"Line {line_num}: 卡号已存在")
+                    except Exception as e:
+                        error_count += 1
+                        errors.append(f"Line {line_num}: {str(e)}")
+                else:
                     error_count += 1
-                    errors.append(f"Line {line_num}: 卡号已存在")
-                except Exception as e:
-                    error_count += 1
-                    errors.append(f"Line {line_num}: {str(e)}")
-            else:
-                error_count += 1
-                errors.append(f"Line {line_num}: 无法解析 - {line[:30]}")
+                    errors.append(f"Line {line_num}: 无法解析 - {line[:30]}")
+            
+            conn.commit()
+            conn.close()
         
         return success_count, error_count, errors
     

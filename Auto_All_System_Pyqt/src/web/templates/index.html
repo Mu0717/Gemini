@@ -4,13 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Auto All System - 控制台</title>
-    <link rel="stylesheet" href="/static/css/style.css?v=4.7" />
+    <link rel="stylesheet" href="/static/css/style.css?v=5.2" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
     />
   </head>
+
   <body>
     <div class="app">
       <!-- 侧边栏 -->
@@ -18,9 +19,22 @@
         <div class="logo">
           <span class="logo-icon">⚡</span>
           <span class="logo-text">AutoSystem</span>
-          <button class="sidebar-toggle" id="sidebar-toggle" onclick="toggleSidebar()" title="收起侧边栏">
-            <svg class="toggle-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M15 18l-6-6 6-6"/>
+          <button
+            class="sidebar-toggle"
+            id="sidebar-toggle"
+            onclick="toggleSidebar()"
+            title="收起侧边栏"
+          >
+            <svg
+              class="toggle-arrow"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M15 18l-6-6 6-6" />
             </svg>
           </button>
         </div>
@@ -62,7 +76,9 @@
             <a href="#" class="nav-item" data-page="verification">
               <span class="nav-icon">🔐</span>
               <span>批量验证 SheerID</span>
-              <span class="nav-badge verification-badge" id="verification-count">0</span>
+              <span class="nav-badge verification-badge" id="verification-count"
+                >0</span
+              >
             </a>
             <a href="#" class="nav-item" data-page="bind-card">
               <span class="nav-icon">💳</span>
@@ -101,15 +117,31 @@
         <!-- 顶部栏 -->
         <header class="header">
           <div class="header-left">
-            <button class="sidebar-expand-btn" id="sidebar-expand-btn" onclick="toggleSidebar()" title="展开侧边栏">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M9 18l6-6-6-6"/>
+            <button
+              class="sidebar-expand-btn"
+              id="sidebar-expand-btn"
+              onclick="toggleSidebar()"
+              title="展开侧边栏"
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M9 18l6-6-6-6" />
               </svg>
             </button>
             <h1 class="page-title" id="page-title">仪表盘</h1>
           </div>
           <div class="header-right">
-            <button class="btn btn-ghost" id="toggle-secrets-btn" onclick="toggleSecrets()">
+            <button
+              class="btn btn-ghost"
+              id="toggle-secrets-btn"
+              onclick="toggleSecrets()"
+            >
               <span class="btn-icon" id="toggle-secrets-icon">👁️</span>
               <span id="toggle-secrets-text">隐藏密码</span>
             </button>
@@ -228,7 +260,9 @@
                     <option value="link_ready">链接就绪</option>
                     <option value="verified">已验证</option>
                     <option value="subscribed">已订阅</option>
+                    <option value="face_check">人脸验证</option>
                     <option value="ineligible">无资格</option>
+                    <option value="sold">已售卖</option>
                     <option value="error">错误</option>
                   </select>
                   <input
@@ -248,11 +282,24 @@
                   <span class="btn-icon">📥</span>
                   导入账号
                 </button>
-                <button class="btn btn-secondary" onclick="showModal('export-accounts')">
+                <button
+                  class="btn btn-secondary"
+                  onclick="showModal('export-accounts')"
+                >
                   <span class="btn-icon">📤</span>
                   导出
                 </button>
-                <button class="btn btn-secondary" onclick="openBatchStatusModal()">
+                <button
+                  class="btn btn-secondary"
+                  onclick="exportSelectedAccounts()"
+                >
+                  <span class="btn-icon">📋</span>
+                  导出选中
+                </button>
+                <button
+                  class="btn btn-secondary"
+                  onclick="openBatchStatusModal()"
+                >
                   <span class="btn-icon">🔄</span>
                   修改状态
                 </button>
@@ -440,10 +487,12 @@
                         placeholder="54345"
                         min="1024"
                         max="65535"
-                        style="width: 120px;"
+                        style="width: 120px"
                       />
                     </div>
-                    <small class="form-hint">比特浏览器 Local API 端口，默认 54345</small>
+                    <small class="form-hint"
+                      >比特浏览器 Local API 端口，默认 54345</small
+                    >
                   </div>
                 </div>
               </div>
@@ -467,7 +516,10 @@
                   <div class="quota-info" id="quota-info">
                     <div class="quota-header">
                       <span class="quota-title">API 状态</span>
-                      <button class="btn btn-ghost btn-sm" onclick="refreshQuota()">
+                      <button
+                        class="btn btn-ghost btn-sm"
+                        onclick="refreshQuota()"
+                      >
                         <span class="btn-icon">🔄</span>
                         刷新
                       </button>
@@ -487,7 +539,11 @@
                       </div>
                     </div>
                     <div class="quota-progress">
-                      <div class="quota-progress-bar" id="quota-progress-bar" style="width: 0%"></div>
+                      <div
+                        class="quota-progress-bar"
+                        id="quota-progress-bar"
+                        style="width: 0%"
+                      ></div>
                     </div>
                     <div class="quota-status" id="quota-status">
                       <span class="status-dot"></span>
@@ -495,6 +551,101 @@
                     </div>
                     <div class="quota-note">
                       <small>💡 配额信息需执行一次验证后更新</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- SheerID 充值 -->
+              <div class="panel">
+                <div class="panel-header">
+                  <h2 class="panel-title">💰 SheerID 积分充值</h2>
+                </div>
+                <div class="panel-body">
+                  <div class="form-group">
+                    <label class="label">兑换卡密</label>
+                    <div class="input-group">
+                      <input
+                        type="text"
+                        class="input"
+                        id="redeem-code"
+                        placeholder="输入卡密 (例如: xxxxx-xxxxx-xxxxx)"
+                      />
+                      <button class="btn btn-primary" onclick="redeemCard()">
+                        <span class="btn-icon">🎁</span>
+                        兑换
+                      </button>
+                    </div>
+                    <small class="form-hint"
+                      >兑换成功后积分将自动添加到当前 API Key 账户中</small
+                    >
+                  </div>
+                </div>
+              </div>
+
+              <!-- SheerID 链接验证 -->
+              <div class="panel">
+                <div class="panel-header">
+                  <h2 class="panel-title">🔗 SheerID 链接验证</h2>
+                </div>
+                <div class="panel-body">
+                  <div class="form-group">
+                    <label class="label">验证链接或 ID</label>
+                    <div class="input-group">
+                      <input
+                        type="text"
+                        class="input"
+                        id="verify-link-input"
+                        placeholder="输入 SheerID 验证链接或 Verification ID"
+                      />
+                      <button
+                        class="btn btn-primary"
+                        onclick="verifySheerIDLink()"
+                      >
+                        <span class="btn-icon">⚡</span>
+                        验证
+                      </button>
+                    </div>
+                    <small class="form-hint"
+                      >系统将自动提取链接中的 verificationId 并进行验证</small
+                    >
+                  </div>
+                  <!-- 验证状态日志 -->
+                  <div class="form-group" style="margin-top: 12px">
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        margin-bottom: 6px;
+                      "
+                    >
+                      <label class="label" style="margin-bottom: 0"
+                        >📋 验证日志</label
+                      >
+                      <button
+                        class="btn btn-ghost btn-sm"
+                        onclick="clearLinkVerifyLog()"
+                      >
+                        清空
+                      </button>
+                    </div>
+                    <div
+                      class="verify-link-log-wrapper"
+                      id="verify-link-log"
+                      style="min-height: 120px; max-height: 300px"
+                    >
+                      <!-- 表头 -->
+                      <!-- <div class="vlog-header">
+                        <span class="vlog-col vlog-col-time">时间</span>
+                        <span class="vlog-col vlog-col-id">验证 ID</span>
+                        <span class="vlog-col vlog-col-result">结果</span>
+                        <span class="vlog-col vlog-col-msg">消息</span>
+                      </div> -->
+                      <!-- 日志内容 -->
+                      <div class="vlog-body" id="verify-link-log-body">
+                        <div class="log-placeholder">等待验证操作...</div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -535,6 +686,10 @@
                   <span class="stat-number" id="sheerlink-subscribed">0</span>
                   <span class="stat-desc">💳已绑卡</span>
                 </div>
+                <div class="auto-stat warning">
+                  <span class="stat-number" id="sheerlink-face">0</span>
+                  <span class="stat-desc">📸人脸</span>
+                </div>
                 <div class="auto-stat danger">
                   <span class="stat-number" id="sheerlink-ineligible">0</span>
                   <span class="stat-desc">❌无资格</span>
@@ -547,34 +702,62 @@
               <div class="auto-actions">
                 <div class="concurrency-setting">
                   <label>并发数:</label>
-                  <input type="number" id="sheerlink-concurrency" value="1" min="1" max="10" class="input-sm">
+                  <input
+                    type="number"
+                    id="sheerlink-concurrency"
+                    value="1"
+                    min="1"
+                    max="10"
+                    class="input-sm"
+                  />
                 </div>
                 <button class="btn btn-ghost" onclick="loadSheerLinkAccounts()">
                   <span class="btn-icon">🔄</span>
                   刷新列表
                 </button>
-                <button class="btn btn-success" id="btn-start-sheerlink" onclick="startSheerLinkProcess()">
+                <button
+                  class="btn btn-success"
+                  id="btn-start-sheerlink"
+                  onclick="startSheerLinkProcess()"
+                >
                   <span class="btn-icon">🔗</span>
                   开始提取
                 </button>
-                <button class="btn btn-danger" id="btn-stop-sheerlink" onclick="stopSheerLinkProcess()" style="display: none;">
+                <button
+                  class="btn btn-danger"
+                  id="btn-stop-sheerlink"
+                  onclick="stopSheerLinkProcess()"
+                  style="display: none"
+                >
                   <span class="btn-icon">⏹️</span>
                   停止
                 </button>
               </div>
             </div>
 
-            <div class="auto-progress-section" id="sheerlink-progress-section" style="display: none;">
+            <div
+              class="auto-progress-section"
+              id="sheerlink-progress-section"
+              style="display: none"
+            >
               <div class="progress-header">
                 <span class="progress-title">提取进度</span>
-                <span class="progress-text" id="sheerlink-progress-text">0 / 0</span>
+                <span class="progress-text" id="sheerlink-progress-text"
+                  >0 / 0</span
+                >
               </div>
               <div class="progress-bar-container">
-                <div class="progress-bar" id="sheerlink-progress-bar" style="width: 0%;"></div>
+                <div
+                  class="progress-bar"
+                  id="sheerlink-progress-bar"
+                  style="width: 0%"
+                ></div>
               </div>
               <div class="current-task" id="sheerlink-task-info">
                 <span class="task-label">当前:</span>
-                <span class="task-browser" id="sheerlink-current-account">-</span>
+                <span class="task-browser" id="sheerlink-current-account"
+                  >-</span
+                >
                 <span class="task-step" id="sheerlink-current-step">-</span>
               </div>
             </div>
@@ -585,11 +768,67 @@
                   <h2 class="panel-title">账号列表</h2>
                   <div class="panel-actions">
                     <label class="checkbox-label">
-                      <input type="checkbox" id="sheerlink-select-all" onchange="toggleSheerLinkSelectAll()">
+                      <input
+                        type="checkbox"
+                        id="sheerlink-select-all"
+                        onchange="toggleSheerLinkSelectAll()"
+                      />
                       <span>全选</span>
                     </label>
-                    <span class="selected-count">已选: <span id="sheerlink-selected-count">0</span></span>
+                    <button
+                      class="btn btn-ghost btn-sm"
+                      onclick="selectUnverifiedSheerLink()"
+                    >
+                      <span class="btn-icon">🔗</span>
+                      勾选未验证
+                    </button>
+                    <span class="selected-count"
+                      >已选: <span id="sheerlink-selected-count">0</span></span
+                    >
                   </div>
+                </div>
+                <!-- 筛选工具栏 -->
+                <div
+                  class="filter-toolbar"
+                  style="
+                    padding: 8px 16px;
+                    border-bottom: 1px solid var(--border-color);
+                    flex-wrap: nowrap;
+                    gap: 8px;
+                  "
+                >
+                  <input
+                    type="text"
+                    class="input search-input"
+                    id="sheerlink-search-input"
+                    placeholder="搜索邮箱..."
+                    style="min-width: 120px; max-width: 180px"
+                    onkeyup="
+                      if (event.key === 'Enter') searchSheerLinkAccounts();
+                    "
+                  />
+                  <select
+                    class="select"
+                    id="sheerlink-status-filter"
+                    onchange="filterSheerLinkAccounts()"
+                    style="min-width: 100px"
+                  >
+                    <option value="">全部状态</option>
+                    <option value="pending_check">待检查</option>
+                    <option value="link_ready">链接就绪</option>
+                    <option value="verified">已验证</option>
+                    <option value="subscribed">已订阅</option>
+                    <option value="subscribed_antigravity">已解锁</option>
+                    <option value="face_check">人脸验证</option>
+                    <option value="ineligible">无资格</option>
+                    <option value="error">错误</option>
+                  </select>
+                  <button
+                    class="btn btn-ghost btn-sm"
+                    onclick="searchSheerLinkAccounts()"
+                  >
+                    🔍
+                  </button>
                 </div>
                 <div class="panel-body browser-list-container">
                   <div class="browser-list" id="sheerlink-list">
@@ -604,7 +843,12 @@
               <div class="panel auto-panel log-panel">
                 <div class="panel-header">
                   <h2 class="panel-title">执行日志</h2>
-                  <button class="btn btn-ghost btn-sm" onclick="clearSheerLinkLog()">清空</button>
+                  <button
+                    class="btn btn-ghost btn-sm"
+                    onclick="clearSheerLinkLog()"
+                  >
+                    清空
+                  </button>
                 </div>
                 <div class="panel-body log-container">
                   <div class="auto-log" id="sheerlink-log">
@@ -639,34 +883,62 @@
               <div class="auto-actions">
                 <div class="concurrency-setting">
                   <label>并发数:</label>
-                  <input type="number" id="bindcard-concurrency" value="1" min="1" max="10" class="input-sm">
+                  <input
+                    type="number"
+                    id="bindcard-concurrency"
+                    value="1"
+                    min="1"
+                    max="10"
+                    class="input-sm"
+                  />
                 </div>
                 <button class="btn btn-ghost" onclick="loadBindCardAccounts()">
                   <span class="btn-icon">🔄</span>
                   刷新列表
                 </button>
-                <button class="btn btn-success" id="btn-start-bindcard" onclick="startBindCardProcess()">
+                <button
+                  class="btn btn-success"
+                  id="btn-start-bindcard"
+                  onclick="startBindCardProcess()"
+                >
                   <span class="btn-icon">💳</span>
                   开始绑卡
                 </button>
-                <button class="btn btn-danger" id="btn-stop-bindcard" onclick="stopBindCardProcess()" style="display: none;">
+                <button
+                  class="btn btn-danger"
+                  id="btn-stop-bindcard"
+                  onclick="stopBindCardProcess()"
+                  style="display: none"
+                >
                   <span class="btn-icon">⏹️</span>
                   停止
                 </button>
               </div>
             </div>
 
-            <div class="auto-progress-section" id="bindcard-progress-section" style="display: none;">
+            <div
+              class="auto-progress-section"
+              id="bindcard-progress-section"
+              style="display: none"
+            >
               <div class="progress-header">
                 <span class="progress-title">绑卡进度</span>
-                <span class="progress-text" id="bindcard-progress-text">0 / 0</span>
+                <span class="progress-text" id="bindcard-progress-text"
+                  >0 / 0</span
+                >
               </div>
               <div class="progress-bar-container">
-                <div class="progress-bar" id="bindcard-progress-bar" style="width: 0%;"></div>
+                <div
+                  class="progress-bar"
+                  id="bindcard-progress-bar"
+                  style="width: 0%"
+                ></div>
               </div>
               <div class="current-task" id="bindcard-task-info">
                 <span class="task-label">当前:</span>
-                <span class="task-browser" id="bindcard-current-account">-</span>
+                <span class="task-browser" id="bindcard-current-account"
+                  >-</span
+                >
                 <span class="task-step" id="bindcard-current-step">-</span>
               </div>
             </div>
@@ -677,10 +949,16 @@
                   <h2 class="panel-title">已验证账号 (可绑卡)</h2>
                   <div class="panel-actions">
                     <label class="checkbox-label">
-                      <input type="checkbox" id="bindcard-select-all" onchange="toggleBindCardSelectAll()">
+                      <input
+                        type="checkbox"
+                        id="bindcard-select-all"
+                        onchange="toggleBindCardSelectAll()"
+                      />
                       <span>全选</span>
                     </label>
-                    <span class="selected-count">已选: <span id="bindcard-selected-count">0</span></span>
+                    <span class="selected-count"
+                      >已选: <span id="bindcard-selected-count">0</span></span
+                    >
                   </div>
                 </div>
                 <div class="panel-body browser-list-container">
@@ -696,7 +974,12 @@
               <div class="panel auto-panel log-panel">
                 <div class="panel-header">
                   <h2 class="panel-title">执行日志</h2>
-                  <button class="btn btn-ghost btn-sm" onclick="clearBindCardLog()">清空</button>
+                  <button
+                    class="btn btn-ghost btn-sm"
+                    onclick="clearBindCardLog()"
+                  >
+                    清空
+                  </button>
                 </div>
                 <div class="panel-body log-container">
                   <div class="auto-log" id="bindcard-log">
@@ -732,17 +1015,33 @@
               <div class="auto-actions">
                 <div class="concurrency-setting">
                   <label>并发数:</label>
-                  <input type="number" id="auto-concurrency" value="1" min="1" max="10" class="input-sm">
+                  <input
+                    type="number"
+                    id="auto-concurrency"
+                    value="1"
+                    min="1"
+                    max="10"
+                    class="input-sm"
+                  />
                 </div>
                 <button class="btn btn-ghost" onclick="loadAutoAccounts()">
                   <span class="btn-icon">🔄</span>
                   刷新列表
                 </button>
-                <button class="btn btn-success" id="btn-start-auto" onclick="startAutoProcess()">
+                <button
+                  class="btn btn-success"
+                  id="btn-start-auto"
+                  onclick="startAutoProcess()"
+                >
                   <span class="btn-icon">🚀</span>
                   开始处理
                 </button>
-                <button class="btn btn-danger" id="btn-stop-auto" onclick="stopAutoProcess()" style="display: none;">
+                <button
+                  class="btn btn-danger"
+                  id="btn-stop-auto"
+                  onclick="stopAutoProcess()"
+                  style="display: none"
+                >
                   <span class="btn-icon">⏹️</span>
                   停止
                 </button>
@@ -750,13 +1049,21 @@
             </div>
 
             <!-- 进度显示 -->
-            <div class="auto-progress-section" id="auto-progress-section" style="display: none;">
+            <div
+              class="auto-progress-section"
+              id="auto-progress-section"
+              style="display: none"
+            >
               <div class="progress-header">
                 <span class="progress-title">处理进度</span>
                 <span class="progress-text" id="auto-progress-text">0 / 0</span>
               </div>
               <div class="progress-bar-container">
-                <div class="progress-bar" id="auto-progress-bar" style="width: 0%;"></div>
+                <div
+                  class="progress-bar"
+                  id="auto-progress-bar"
+                  style="width: 0%"
+                ></div>
               </div>
               <div class="current-task" id="current-task-info">
                 <span class="task-label">当前:</span>
@@ -772,11 +1079,55 @@
                   <h2 class="panel-title">账号列表</h2>
                   <div class="panel-actions">
                     <label class="checkbox-label">
-                      <input type="checkbox" id="auto-select-all" onchange="toggleAutoSelectAll()">
+                      <input
+                        type="checkbox"
+                        id="auto-select-all"
+                        onchange="toggleAutoSelectAll()"
+                      />
                       <span>全选</span>
                     </label>
-                    <span class="selected-count">已选: <span id="auto-selected-count">0</span></span>
+                    <span class="selected-count"
+                      >已选: <span id="auto-selected-count">0</span></span
+                    >
                   </div>
+                </div>
+                <!-- 筛选工具栏 -->
+                <div
+                  class="filter-toolbar"
+                  style="
+                    padding: 12px 20px;
+                    border-bottom: 1px solid var(--border-color);
+                  "
+                >
+                  <input
+                    type="text"
+                    class="input search-input"
+                    id="auto-search-input"
+                    placeholder="搜索邮箱..."
+                    onkeyup="if (event.key === 'Enter') searchAutoAccounts();"
+                  />
+                  <select
+                    class="select"
+                    id="auto-status-filter"
+                    onchange="filterAutoAccounts()"
+                  >
+                    <option value="">全部状态</option>
+                    <option value="pending_check">待检查</option>
+                    <option value="link_ready">链接就绪</option>
+                    <option value="verified">已验证</option>
+                    <option value="subscribed">已订阅</option>
+                    <option value="subscribed_antigravity">已解锁</option>
+                    <option value="face_check">人脸验证</option>
+                    <option value="ineligible">无资格</option>
+                    <option value="error">错误</option>
+                  </select>
+                  <button
+                    class="btn btn-ghost btn-sm"
+                    onclick="searchAutoAccounts()"
+                  >
+                    <span class="btn-icon">🔍</span>
+                    搜索
+                  </button>
                 </div>
                 <div class="panel-body browser-list-container">
                   <div class="browser-list" id="browser-list">
@@ -792,7 +1143,9 @@
               <div class="panel auto-panel log-panel">
                 <div class="panel-header">
                   <h2 class="panel-title">执行日志</h2>
-                  <button class="btn btn-ghost btn-sm" onclick="clearAutoLog()">清空</button>
+                  <button class="btn btn-ghost btn-sm" onclick="clearAutoLog()">
+                    清空
+                  </button>
                 </div>
                 <div class="panel-body log-container">
                   <div class="auto-log" id="auto-log">
@@ -803,7 +1156,7 @@
             </div>
 
             <!-- 处理结果 -->
-            <div class="panel" id="auto-results-panel" style="display: none;">
+            <div class="panel" id="auto-results-panel" style="display: none">
               <div class="panel-header">
                 <h2 class="panel-title">处理结果</h2>
               </div>
@@ -839,34 +1192,62 @@
               <div class="auto-actions">
                 <div class="concurrency-setting">
                   <label>并发数:</label>
-                  <input type="number" id="change2fa-concurrency" value="1" min="1" max="5" class="input-sm">
+                  <input
+                    type="number"
+                    id="change2fa-concurrency"
+                    value="1"
+                    min="1"
+                    max="5"
+                    class="input-sm"
+                  />
                 </div>
                 <button class="btn btn-ghost" onclick="loadChange2FAAccounts()">
                   <span class="btn-icon">🔄</span>
                   刷新列表
                 </button>
-                <button class="btn btn-success" id="btn-start-change2fa" onclick="startChange2FAProcess()">
+                <button
+                  class="btn btn-success"
+                  id="btn-start-change2fa"
+                  onclick="startChange2FAProcess()"
+                >
                   <span class="btn-icon">🔑</span>
                   开始更改
                 </button>
-                <button class="btn btn-danger" id="btn-stop-change2fa" onclick="stopChange2FAProcess()" style="display: none;">
+                <button
+                  class="btn btn-danger"
+                  id="btn-stop-change2fa"
+                  onclick="stopChange2FAProcess()"
+                  style="display: none"
+                >
                   <span class="btn-icon">⏹️</span>
                   停止
                 </button>
               </div>
             </div>
 
-            <div class="auto-progress-section" id="change2fa-progress-section" style="display: none;">
+            <div
+              class="auto-progress-section"
+              id="change2fa-progress-section"
+              style="display: none"
+            >
               <div class="progress-header">
                 <span class="progress-title">更改进度</span>
-                <span class="progress-text" id="change2fa-progress-text">0 / 0</span>
+                <span class="progress-text" id="change2fa-progress-text"
+                  >0 / 0</span
+                >
               </div>
               <div class="progress-bar-container">
-                <div class="progress-bar" id="change2fa-progress-bar" style="width: 0%;"></div>
+                <div
+                  class="progress-bar"
+                  id="change2fa-progress-bar"
+                  style="width: 0%"
+                ></div>
               </div>
               <div class="current-task" id="change2fa-task-info">
                 <span class="task-label">当前:</span>
-                <span class="task-browser" id="change2fa-current-account">-</span>
+                <span class="task-browser" id="change2fa-current-account"
+                  >-</span
+                >
                 <span class="task-step" id="change2fa-current-step">-</span>
               </div>
             </div>
@@ -877,11 +1258,60 @@
                   <h2 class="panel-title">有2FA密钥的账号</h2>
                   <div class="panel-actions">
                     <label class="checkbox-label">
-                      <input type="checkbox" id="change2fa-select-all" onchange="toggleChange2FASelectAll()">
+                      <input
+                        type="checkbox"
+                        id="change2fa-select-all"
+                        onchange="toggleChange2FASelectAll()"
+                      />
                       <span>全选</span>
                     </label>
-                    <span class="selected-count">已选: <span id="change2fa-selected-count">0</span></span>
+                    <span class="selected-count"
+                      >已选: <span id="change2fa-selected-count">0</span></span
+                    >
                   </div>
+                </div>
+                <!-- 筛选工具栏 -->
+                <div
+                  class="filter-toolbar"
+                  style="
+                    padding: 8px 16px;
+                    border-bottom: 1px solid var(--border-color);
+                    flex-wrap: nowrap;
+                    gap: 8px;
+                  "
+                >
+                  <input
+                    type="text"
+                    class="input search-input"
+                    id="change2fa-search-input"
+                    placeholder="搜索邮箱..."
+                    style="min-width: 120px; max-width: 180px"
+                    onkeyup="
+                      if (event.key === 'Enter') searchChange2FAAccounts();
+                    "
+                  />
+                  <select
+                    class="select"
+                    id="change2fa-status-filter"
+                    onchange="filterChange2FAAccounts()"
+                    style="min-width: 100px"
+                  >
+                    <option value="">全部状态</option>
+                    <option value="pending_check">待检查</option>
+                    <option value="link_ready">链接就绪</option>
+                    <option value="verified">已验证</option>
+                    <option value="subscribed">已订阅</option>
+                    <option value="subscribed_antigravity">已解锁</option>
+                    <option value="face_check">人脸验证</option>
+                    <option value="ineligible">无资格</option>
+                    <option value="error">错误</option>
+                  </select>
+                  <button
+                    class="btn btn-ghost btn-sm"
+                    onclick="searchChange2FAAccounts()"
+                  >
+                    🔍
+                  </button>
                 </div>
                 <div class="panel-body browser-list-container">
                   <div class="browser-list" id="change2fa-list">
@@ -896,7 +1326,12 @@
               <div class="panel auto-panel log-panel">
                 <div class="panel-header">
                   <h2 class="panel-title">执行日志</h2>
-                  <button class="btn btn-ghost btn-sm" onclick="clearChange2FALog()">清空</button>
+                  <button
+                    class="btn btn-ghost btn-sm"
+                    onclick="clearChange2FALog()"
+                  >
+                    清空
+                  </button>
                 </div>
                 <div class="panel-body log-container">
                   <div class="auto-log" id="change2fa-log">
@@ -930,15 +1365,27 @@
                 </div>
               </div>
               <div class="verification-actions">
-                <button class="btn btn-primary" id="btn-start-verify" onclick="startVerification()">
+                <button
+                  class="btn btn-primary"
+                  id="btn-start-verify"
+                  onclick="startVerification()"
+                >
                   <span class="btn-icon">🚀</span>
                   开始验证
                 </button>
-                <button class="btn btn-danger" id="btn-stop-verify" onclick="stopVerification()" style="display:none;">
+                <button
+                  class="btn btn-danger"
+                  id="btn-stop-verify"
+                  onclick="stopVerification()"
+                  style="display: none"
+                >
                   <span class="btn-icon">⏹️</span>
                   停止验证
                 </button>
-                <button class="btn btn-ghost" onclick="loadVerificationAccounts()">
+                <button
+                  class="btn btn-ghost"
+                  onclick="loadVerificationAccounts()"
+                >
                   <span class="btn-icon">🔄</span>
                   刷新列表
                 </button>
@@ -946,13 +1393,21 @@
             </div>
 
             <!-- 验证进度 -->
-            <div class="verification-progress" id="verification-progress" style="display:none;">
+            <div
+              class="verification-progress"
+              id="verification-progress"
+              style="display: none"
+            >
               <div class="progress-header">
                 <span class="progress-title">验证进度</span>
                 <span class="progress-text" id="progress-text">0 / 0</span>
               </div>
               <div class="progress-bar-container">
-                <div class="progress-bar" id="progress-bar" style="width: 0%"></div>
+                <div
+                  class="progress-bar"
+                  id="progress-bar"
+                  style="width: 0%"
+                ></div>
               </div>
               <div class="progress-status" id="progress-status">准备中...</div>
             </div>
@@ -963,7 +1418,11 @@
                 <h2 class="panel-title">待验证账号列表</h2>
                 <div class="panel-actions">
                   <label class="checkbox-label">
-                    <input type="checkbox" id="verify-select-all" onchange="toggleVerifySelectAll()">
+                    <input
+                      type="checkbox"
+                      id="verify-select-all"
+                      onchange="toggleVerifySelectAll()"
+                    />
                     <span>全选</span>
                   </label>
                 </div>
@@ -984,7 +1443,10 @@
             <div class="panel">
               <div class="panel-header">
                 <h2 class="panel-title">验证日志</h2>
-                <button class="btn btn-ghost btn-sm" onclick="clearVerificationLog()">
+                <button
+                  class="btn btn-ghost btn-sm"
+                  onclick="clearVerificationLog()"
+                >
                   <span class="btn-icon">🗑️</span>
                   清空
                 </button>
@@ -1121,43 +1583,88 @@ host:port"
       <div class="modal-body">
         <input type="hidden" id="edit-card-id" />
         <div class="form-row">
-          <div class="form-group" style="flex: 2;">
+          <div class="form-group" style="flex: 2">
             <label class="label">卡号 *</label>
-            <input type="text" class="input" id="edit-card-number" placeholder="卡号" />
+            <input
+              type="text"
+              class="input"
+              id="edit-card-number"
+              placeholder="卡号"
+            />
           </div>
         </div>
         <div class="form-row">
           <div class="form-group">
             <label class="label">有效月份 *</label>
-            <input type="text" class="input" id="edit-card-exp-month" placeholder="MM" maxlength="2" />
+            <input
+              type="text"
+              class="input"
+              id="edit-card-exp-month"
+              placeholder="MM"
+              maxlength="2"
+            />
           </div>
           <div class="form-group">
             <label class="label">有效年份 *</label>
-            <input type="text" class="input" id="edit-card-exp-year" placeholder="YY" maxlength="2" />
+            <input
+              type="text"
+              class="input"
+              id="edit-card-exp-year"
+              placeholder="YY"
+              maxlength="2"
+            />
           </div>
           <div class="form-group">
             <label class="label">CVV *</label>
-            <input type="text" class="input" id="edit-card-cvv" placeholder="CVV" maxlength="4" />
+            <input
+              type="text"
+              class="input"
+              id="edit-card-cvv"
+              placeholder="CVV"
+              maxlength="4"
+            />
           </div>
         </div>
         <div class="form-row">
           <div class="form-group">
             <label class="label">持卡人姓名</label>
-            <input type="text" class="input" id="edit-card-holder" placeholder="持卡人姓名（可选）" />
+            <input
+              type="text"
+              class="input"
+              id="edit-card-holder"
+              placeholder="持卡人姓名（可选）"
+            />
           </div>
           <div class="form-group">
             <label class="label">邮编</label>
-            <input type="text" class="input" id="edit-card-zip" placeholder="邮编（可选）" />
+            <input
+              type="text"
+              class="input"
+              id="edit-card-zip"
+              placeholder="邮编（可选）"
+            />
           </div>
         </div>
         <div class="form-row">
           <div class="form-group">
             <label class="label">已使用次数</label>
-            <input type="number" class="input" id="edit-card-usage" value="0" min="0" />
+            <input
+              type="number"
+              class="input"
+              id="edit-card-usage"
+              value="0"
+              min="0"
+            />
           </div>
           <div class="form-group">
             <label class="label">最大使用次数</label>
-            <input type="number" class="input" id="edit-card-max-usage" value="1" min="1" />
+            <input
+              type="number"
+              class="input"
+              id="edit-card-max-usage"
+              value="1"
+              min="1"
+            />
           </div>
         </div>
         <div class="form-group">
@@ -1176,11 +1683,27 @@ host:port"
     <!-- 导出账号模态框 -->
     <div class="modal" id="modal-export-accounts">
       <div class="modal-header">
-        <h3 class="modal-title">导出账号</h3>
+        <h3 class="modal-title" id="export-modal-title">导出账号</h3>
         <button class="modal-close" onclick="closeModal()">×</button>
       </div>
       <div class="modal-body">
-        <div class="form-group">
+        <!-- 导出模式提示 -->
+        <input type="hidden" id="export-mode" value="filter" />
+        <div class="form-group" id="export-selected-info" style="display: none">
+          <div
+            style="
+              padding: 12px;
+              background: var(--bg-tertiary);
+              border-radius: 8px;
+              margin-bottom: 16px;
+            "
+          >
+            <p style="margin: 0; color: var(--primary-color)">
+              📋 导出选中的 <strong id="export-selected-count">0</strong> 个账号
+            </p>
+          </div>
+        </div>
+        <div class="form-group" id="export-status-group">
           <label class="label">筛选状态</label>
           <select class="select" id="export-accounts-status">
             <option value="">全部状态</option>
@@ -1189,6 +1712,8 @@ host:port"
             <option value="verified">已验证</option>
             <option value="subscribed">已订阅（含解锁Antigravity）</option>
             <option value="subscribed_antigravity">仅已解锁Antigravity</option>
+            <option value="face_check">人脸验证</option>
+            <option value="sold">已售卖</option>
             <option value="ineligible">无资格</option>
             <option value="error">错误</option>
           </select>
@@ -1197,10 +1722,12 @@ host:port"
           <label class="label">导出选项</label>
           <div class="checkbox-group">
             <label class="checkbox-label">
-              <input type="checkbox" id="export-include-exported" checked> 包括已导出的账号
+              <input type="checkbox" id="export-include-exported" checked />
+              包括已导出的账号
             </label>
             <label class="checkbox-label">
-              <input type="checkbox" id="export-mark-exported" checked> 导出后标记为已导出
+              <input type="checkbox" id="export-mark-exported" checked />
+              导出后标记为已导出
             </label>
           </div>
         </div>
@@ -1208,28 +1735,34 @@ host:port"
           <label class="label">导出字段（可多选）</label>
           <div class="checkbox-group">
             <label class="checkbox-label">
-              <input type="checkbox" id="export-field-email" checked disabled> 邮箱
+              <input type="checkbox" id="export-field-email" checked disabled />
+              邮箱
             </label>
             <label class="checkbox-label">
-              <input type="checkbox" id="export-field-password" checked> 密码
+              <input type="checkbox" id="export-field-password" checked /> 密码
             </label>
             <label class="checkbox-label">
-              <input type="checkbox" id="export-field-recovery"> 辅助邮箱
+              <input type="checkbox" id="export-field-recovery" /> 辅助邮箱
             </label>
             <label class="checkbox-label">
-              <input type="checkbox" id="export-field-secret"> 2FA密钥
+              <input type="checkbox" id="export-field-secret" /> 2FA密钥
             </label>
             <label class="checkbox-label">
-              <input type="checkbox" id="export-field-link"> 验证链接
+              <input type="checkbox" id="export-field-link" /> 验证链接
             </label>
             <label class="checkbox-label">
-              <input type="checkbox" id="export-field-status"> 状态
+              <input type="checkbox" id="export-field-status" /> 状态
             </label>
           </div>
         </div>
         <div class="form-group">
           <label class="label">分隔符</label>
-          <input type="text" class="input" id="export-accounts-separator" value="----">
+          <input
+            type="text"
+            class="input"
+            id="export-accounts-separator"
+            value="----"
+          />
         </div>
       </div>
       <div class="modal-footer">
@@ -1246,7 +1779,7 @@ host:port"
       </div>
       <div class="modal-body">
         <div class="form-group">
-          <p style="margin-bottom: 16px; color: var(--text-muted);">
+          <p style="margin-bottom: 16px; color: var(--text-muted)">
             已选中 <strong id="batch-status-count">0</strong> 个账号
           </p>
         </div>
@@ -1258,14 +1791,27 @@ host:port"
             <option value="link_ready">链接就绪 (link_ready)</option>
             <option value="verified">已验证 (verified)</option>
             <option value="subscribed">已订阅 (subscribed)</option>
-            <option value="subscribed_antigravity">已解锁 (subscribed_antigravity)</option>
+            <option value="subscribed_antigravity">
+              已解锁 (subscribed_antigravity)
+            </option>
+            <option value="face_check">人脸验证 (face_check)</option>
+            <option value="sold">已售卖 (sold)</option>
             <option value="ineligible">无资格 (ineligible)</option>
             <option value="error">错误 (error)</option>
           </select>
         </div>
-        <div class="info-box" style="margin-top: 16px; padding: 12px; background: var(--bg-tertiary); border-radius: 8px; font-size: 13px;">
-          <p style="margin: 0 0 8px; color: var(--warning-color);">💡 提示：</p>
-          <ul style="margin: 0; padding-left: 20px; color: var(--text-muted);">
+        <div
+          class="info-box"
+          style="
+            margin-top: 16px;
+            padding: 12px;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            font-size: 13px;
+          "
+        >
+          <p style="margin: 0 0 8px; color: var(--warning-color)">💡 提示：</p>
+          <ul style="margin: 0; padding-left: 20px; color: var(--text-muted)">
             <li>只有 <strong>待检查</strong> 状态的账号才会被创建窗口</li>
             <li>已处理的账号可以修改为其他状态避免重复处理</li>
           </ul>
@@ -1273,13 +1819,15 @@ host:port"
       </div>
       <div class="modal-footer">
         <button class="btn btn-ghost" onclick="closeModal()">取消</button>
-        <button class="btn btn-primary" onclick="batchUpdateStatus()">确认修改</button>
+        <button class="btn btn-primary" onclick="batchUpdateStatus()">
+          确认修改
+        </button>
       </div>
     </div>
 
     <!-- Toast 通知 -->
     <div class="toast-container" id="toast-container"></div>
 
-    <script src="/static/js/app.js?v=4.7"></script>
+    <script src="/static/js/app.js?v=5.2"></script>
   </body>
 </html>
