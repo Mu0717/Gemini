@@ -107,6 +107,95 @@ class SheerIDVerifier:
 
         return result
 
+    def verify_single(self, verification_id: str, callback: Callable = None) -> Dict:
+        """
+        @brief Single verification with dynamic status polling
+        @param verification_id Verification ID
+        @param callback Status callback function(vid, message)
+        @return Verification result
+        """
+        if not verification_id:
+            return {"currentStep": "error", "message": "No verification ID provided"}
+
+        self.headers["X-API-Key"] = self.api_key
+        result = {"currentStep": "pending", "message": "Creating task...", "verificationId": verification_id}
+        
+        if callback:
+            callback(verification_id, "Step: pending | Msg: Creating task...")
+            
+        try:
+            url = f"{BASE_URL}/verify"
+            payload = {"verification_id": verification_id}
+            resp = self.session.post(url, headers=self.headers, json=payload, timeout=15)
+            
+            if resp.status_code == 200:
+                data = resp.json()
+                task_id = data.get("task_id")
+                if task_id:
+                    result["message"] = "Task created, waiting for processing..."
+                    if callback:
+                        callback(verification_id, "Step: pending | Msg: Task created, waiting for processing...")
+                        
+                    # Poll status dynamically
+                    poll_interval = 2.0
+                    max_poll_interval = 5.0
+                    
+                    while True:
+                        time.sleep(poll_interval)
+                        status_url = f"{BASE_URL}/verify/status/{task_id}"
+                        status_resp = self.session.get(status_url, headers=self.headers, timeout=10)
+                        
+                        if status_resp.status_code == 200:
+                            status_data = status_resp.json()
+                            status = status_data.get("status", "unknown")
+                            current_step = status_data.get("currentStep", status)
+                            msg = status_data.get("message", "")
+                            
+                            # Merge API response into our result dictionary
+                            for k, v in status_data.items():
+                                if k not in ["task_id", "status", "api_key"]:
+                                    result[k] = v
+                                    
+                            result["currentStep"] = current_step
+                            result["message"] = msg
+                            
+                            if callback:
+                                callback(verification_id, f"Step: {current_step} | Msg: {msg}")
+                                
+                            if status in ["completed", "error"]:
+                                break # Task finished
+                        else:
+                            logger.warning(f"Status check failed for {task_id}: HTTP {status_resp.status_code}")
+                            
+                        # Exponential backoff up to max_poll_interval
+                        poll_interval = min(poll_interval + 0.5, max_poll_interval)
+                else:
+                    result["currentStep"] = "error"
+                    result["message"] = "API response missing task_id"
+                    if callback:
+                        callback(verification_id, "Step: error | Msg: API response missing task_id")
+            else:
+                msg = f"HTTP {resp.status_code}: {resp.text}"
+                result["currentStep"] = "error"
+                result["message"] = msg
+                if callback:
+                    callback(verification_id, f"Step: error | Msg: {msg}")
+                    
+        except Exception as e:
+            msg = f"Connection error: {str(e)}"
+            result["currentStep"] = "error"
+            result["message"] = msg
+            if callback:
+                callback(verification_id, f"Step: error | Msg: {msg}")
+
+        # Final quota update
+        try:
+            self.get_system_status() 
+        except:
+            pass
+
+        return result
+
     def verify_batch(self, verification_ids: List[str], callback: Callable = None) -> Dict:
         """
         @brief Batch verification with chunking
@@ -118,65 +207,108 @@ class SheerIDVerifier:
             return {}
 
         self.headers["X-API-Key"] = self.api_key
-        url = f"{BASE_URL}/verify/batch"
         
-        # Chunking configuration to avoid large payload errors
+        # Chunking configuration to avoid overwhelming the server
         CHUNK_SIZE = 50
         results = {}
         
         chunks = [verification_ids[i:i + CHUNK_SIZE] for i in range(0, len(verification_ids), CHUNK_SIZE)]
-        logger.info(f"📤 Submitting batch verification: {len(verification_ids)} IDs in {len(chunks)} chunks")
+        logger.info(f"📤 Submitting async batch verification: {len(verification_ids)} IDs in {len(chunks)} chunks")
         
         if callback:
-            callback(None, f"Starting batch verification for {len(verification_ids)} items ({len(chunks)} chunks)...")
+            callback(None, f"Starting async batch verification for {len(verification_ids)} items ({len(chunks)} chunks)...")
 
         for i, chunk in enumerate(chunks):
-            try:
-                logger.info(f"Processing chunk {i+1}/{len(chunks)} ({len(chunk)} items)")
-                payload = {"verification_ids": chunk}
-                
-                # Request with extended timeout (300s) to handle server processing delays
-                resp = self.session.post(url, headers=self.headers, json=payload, timeout=300)
-                
-                if resp.status_code != 200:
-                    error_msg = f"HTTP {resp.status_code}: {resp.text}"
-                    logger.error(f"Chunk {i+1} failed: {error_msg}")
-                    for vid in chunk:
-                        results[vid] = {"currentStep": "error", "message": error_msg}
-                    continue
-                
-                data = resp.json()
-                
-                # Check forcredits deducted
-                if 'credits_deducted' in data:
-                    logger.info(f"Credits deducted (chunk {i+1}): {data['credits_deducted']}")
-
-                api_results = data.get('results', [])
-                
-                for res in api_results:
-                    vid = res.get('verificationId')
-                    if vid:
-                        results[vid] = res
-                        if callback:
-                            status = res.get('currentStep', 'unknown')
-                            msg = res.get('message', '')
-                            callback(vid, f"Step: {status} | Msg: {msg}")
-
-                # Mark missing ones as errors
-                for vid in chunk:
-                    if vid not in results:
-                        results[vid] = {"currentStep": "error", "message": "No response from API"}
-
-            except Exception as e:
-                logger.error(f"Chunk {i+1} verification failed: {e}")
-                import traceback
-                traceback.print_exc()
-                for vid in chunk:
-                    results[vid] = {"currentStep": "error", "message": f"Connection error: {str(e)}"}
+            logger.info(f"Processing chunk {i+1}/{len(chunks)} ({len(chunk)} items)")
             
-            # Be nice to the server between chunks
-            if i < len(chunks) - 1:
-                time.sleep(1)
+            active_tasks = {}
+            
+            # 1. Submit tasks for the current chunk
+            for vid in chunk:
+                # Initialize result
+                results[vid] = {"currentStep": "pending", "message": "Creating task..."}
+                if callback:
+                    callback(vid, "Step: pending | Msg: Creating task...")
+                    
+                try:
+                    url = f"{BASE_URL}/verify"
+                    payload = {"verification_id": vid}
+                    resp = self.session.post(url, headers=self.headers, json=payload, timeout=15)
+                    
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        task_id = data.get("task_id")
+                        if task_id:
+                            active_tasks[vid] = task_id
+                            results[vid]["message"] = "Task created, waiting for processing..."
+                            if callback:
+                                callback(vid, "Step: pending | Msg: Task created, waiting for processing...")
+                        else:
+                            results[vid]["currentStep"] = "error"
+                            results[vid]["message"] = "API response missing task_id"
+                            if callback:
+                                callback(vid, "Step: error | Msg: API response missing task_id")
+                    else:
+                        msg = f"HTTP {resp.status_code}: {resp.text}"
+                        results[vid]["currentStep"] = "error"
+                        results[vid]["message"] = msg
+                        if callback:
+                            callback(vid, f"Step: error | Msg: {msg}")
+                            
+                except Exception as e:
+                    msg = f"Connection error: {str(e)}"
+                    results[vid]["currentStep"] = "error"
+                    results[vid]["message"] = msg
+                    if callback:
+                        callback(vid, f"Step: error | Msg: {msg}")
+                        
+                # Small delay to avoid overwhelming the server
+                time.sleep(0.1)
+                
+            # 2. Poll statuses until all tasks in this chunk are completed
+            poll_interval = 2.0
+            max_poll_interval = 5.0
+            
+            while active_tasks:
+                time.sleep(poll_interval)
+                still_active = {}
+                
+                for vid, task_id in active_tasks.items():
+                    try:
+                        status_url = f"{BASE_URL}/verify/status/{task_id}"
+                        resp = self.session.get(status_url, headers=self.headers, timeout=10)
+                        
+                        if resp.status_code == 200:
+                            data = resp.json()
+                            status = data.get("status", "unknown")
+                            current_step = data.get("currentStep", status)
+                            msg = data.get("message", "")
+                            
+                            # Merge API response into our result dictionary
+                            for k, v in data.items():
+                                if k not in ["task_id", "status", "api_key"]:
+                                    results[vid][k] = v
+                                    
+                            results[vid]["currentStep"] = current_step
+                            results[vid]["message"] = msg
+                            
+                            if callback:
+                                callback(vid, f"Step: {current_step} | Msg: {msg}")
+                                
+                            if status in ["completed", "error"]:
+                                pass # Task finished
+                            else:
+                                still_active[vid] = task_id # Still processing
+                        else:
+                            logger.warning(f"Status check failed for {task_id}: HTTP {resp.status_code}")
+                            still_active[vid] = task_id
+                            
+                    except Exception as e:
+                        logger.warning(f"Error checking status for {task_id}: {e}")
+                        still_active[vid] = task_id
+                        
+                active_tasks = still_active
+                poll_interval = min(poll_interval + 0.5, max_poll_interval)
 
         # Final quota update
         try:

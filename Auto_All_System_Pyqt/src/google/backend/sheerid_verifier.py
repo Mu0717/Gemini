@@ -66,6 +66,95 @@ class SheerIDVerifier:
         except Exception as e:
             return {"status": "error", "message": str(e)}
 
+    def verify_single(self, verification_id: str, callback: Callable = None) -> Dict:
+        """
+        @brief 单个验证状态轮询
+        @param verification_id 验证ID
+        @param callback 状态回调函数 callback(vid, message)
+        @return 验证结果
+        """
+        if not verification_id:
+            return {"currentStep": "error", "message": "No verification ID provided"}
+
+        self.headers["X-API-Key"] = self.api_key
+        result = {"currentStep": "pending", "message": "Creating task...", "verificationId": verification_id}
+        
+        if callback:
+            callback(verification_id, "Step: pending | Msg: Creating task...")
+            
+        try:
+            url = f"{BASE_URL}/verify"
+            payload = {"verification_id": verification_id}
+            resp = self.session.post(url, headers=self.headers, json=payload, timeout=15)
+            
+            if resp.status_code == 200:
+                data = resp.json()
+                task_id = data.get("task_id")
+                if task_id:
+                    result["message"] = "Task created, waiting for processing..."
+                    if callback:
+                        callback(verification_id, "Step: pending | Msg: Task created, waiting for processing...")
+                        
+                    # 动态轮询状态
+                    poll_interval = 2.0
+                    max_poll_interval = 5.0
+                    
+                    while True:
+                        time.sleep(poll_interval)
+                        status_url = f"{BASE_URL}/verify/status/{task_id}"
+                        status_resp = self.session.get(status_url, headers=self.headers, timeout=10)
+                        
+                        if status_resp.status_code == 200:
+                            status_data = status_resp.json()
+                            status = status_data.get("status", "unknown")
+                            current_step = status_data.get("currentStep", status)
+                            msg = status_data.get("message", "")
+                            
+                            # 合并返回结果
+                            for k, v in status_data.items():
+                                if k not in ["task_id", "status", "api_key"]:
+                                    result[k] = v
+                                    
+                            result["currentStep"] = current_step
+                            result["message"] = msg
+                            
+                            if callback:
+                                callback(verification_id, f"Step: {current_step} | Msg: {msg}")
+                                
+                            if status in ["completed", "error"]:
+                                break # 任务完成
+                        else:
+                            logger.warning(f"Status check failed for {task_id}: HTTP {status_resp.status_code}")
+                            
+                        # 指数退避
+                        poll_interval = min(poll_interval + 0.5, max_poll_interval)
+                else:
+                    result["currentStep"] = "error"
+                    result["message"] = "API response missing task_id"
+                    if callback:
+                        callback(verification_id, "Step: error | Msg: API response missing task_id")
+            else:
+                msg = f"HTTP {resp.status_code}: {resp.text}"
+                result["currentStep"] = "error"
+                result["message"] = msg
+                if callback:
+                    callback(verification_id, f"Step: error | Msg: {msg}")
+                    
+        except Exception as e:
+            msg = f"Connection error: {str(e)}"
+            result["currentStep"] = "error"
+            result["message"] = msg
+            if callback:
+                callback(verification_id, f"Step: error | Msg: {msg}")
+
+        # Final quota update
+        try:
+            self.get_system_status() 
+        except:
+            pass
+
+        return result
+
     def verify_batch(self, verification_ids: List[str], callback: Callable = None) -> Dict:
         """
         @brief 批量验证

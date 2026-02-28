@@ -604,6 +604,48 @@ class APIHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_json({'success': False, 'error': str(e)})
             return
 
+        if path == '/api/sheerid/verify_single':
+            try:
+                from google.backend.sheerid_verifier import SheerIDVerifier
+                
+                verification_id = params.get('verification_id', '').strip()
+                if not verification_id:
+                    self.send_json({'success': False, 'error': '请提供验证ID'})
+                    return
+                
+                api_key = params.get('api_key', '').strip()
+                if not api_key:
+                    api_key = DBManager.get_setting('sheerid_api_key', '')
+                if not api_key:
+                    self.send_json({'success': False, 'error': '请先配置 API Key'})
+                    return
+                
+                verifier = SheerIDVerifier(api_key)
+                DBManager.add_log('info', f'开始单次验证: {verification_id[:20]}...')
+                
+                result = verifier.verify_single(verification_id)
+                status = result.get('currentStep', 'unknown')
+                msg = result.get('message', '')
+                
+                if status == 'success':
+                    DBManager.update_account_status_by_sheerid(verification_id, 'verified')
+                    DBManager.add_log('info', f'验证成功: {str(verification_id)[:20]}...')
+                else:
+                    DBManager.add_log('warning', f'验证失败: {str(verification_id)[:20]}... - {msg}')
+                
+                quota_info = verifier.quota_info
+                
+                self.send_json({
+                    'success': True,
+                    'result': result,
+                    'quota': quota_info
+                })
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                self.send_json({'success': False, 'error': str(e)})
+            return
+
         if path == '/api/sheerid/verify':
             try:
                 from google.backend.sheerid_verifier import SheerIDVerifier
